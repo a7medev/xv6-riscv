@@ -65,6 +65,17 @@ sys_dup(void)
   return fd;
 }
 
+struct readstat {
+  struct spinlock lock;
+  uint64 count;
+} readstat;
+
+void
+initreadstat(void)
+{
+  initlock(&readstat.lock, "readstat");
+}
+
 uint64
 sys_read(void)
 {
@@ -72,11 +83,27 @@ sys_read(void)
   int n;
   uint64 p;
 
+  acquire(&readstat.lock);
+  readstat.count++;
+  release(&readstat.lock);
+
   argaddr(1, &p);
   argint(2, &n);
   if(argfd(0, 0, &f) < 0)
     return -1;
   return fileread(f, p, n);
+}
+
+uint64
+sys_getreadcount(void)
+{
+  uint64 count;
+
+  acquire(&readstat.lock);
+  count = readstat.count;
+  release(&readstat.lock);
+
+  return count;
 }
 
 uint64

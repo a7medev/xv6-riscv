@@ -19,10 +19,13 @@ struct {
   struct file file[NFILE];
 } ftable;
 
+extern void initreadstat(void);
+
 void
 fileinit(void)
 {
   initlock(&ftable.lock, "ftable");
+  initreadstat();
 }
 
 // Allocate a file structure.
