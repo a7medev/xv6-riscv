@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "pstat.h"
 
 struct cpu cpus[NCPU];
 
@@ -117,6 +118,31 @@ settickets(uint old, uint new)
   return new;
 }
 
+int
+getpinfo(uint64 addr) {
+  struct pstat st = {0};
+  for (int i = 0; i < NPROC; i++) {
+    struct proc *p = &proc[i];
+
+    acquire(&p->lock);
+    if (p->state == UNUSED) {
+      release(&p->lock);
+      continue;
+    }
+
+    st.inuse[i] = 1;
+    st.pid[i] = p->pid;
+    st.tickets[i] = p->tickets;
+    st.ticks[i] = p->ticks;
+
+    release(&p->lock);
+  }
+
+  if (copyout(myproc()->pagetable, addr, (char *)&st, sizeof(st)) < 0)
+    return -1;
+  return 0;
+}
+
 // Look in the process table for an UNUSED proc.
 // If found, initialize state required to run in the kernel,
 // and return with p->lock held.
@@ -184,6 +210,7 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->tickets = 0;
+  p->ticks = 0;
   p->state = UNUSED;
 }
 
@@ -267,6 +294,7 @@ userinit(void)
 
   p->tickets = settickets(0, 1);
   p->state = RUNNABLE;
+  printf("userinit, tickets: %d, pid: %d\n", p->tickets, p->pid);
 
   release(&p->lock);
 }
@@ -481,6 +509,7 @@ scheduler(void)
         // to release its lock and then reacquire it
         // before jumping back to us.
         p->state = RUNNING;
+        p->ticks++;
         c->proc = p;
         swtch(&c->context, &p->context);
 
@@ -580,8 +609,8 @@ sleep(void *chan, struct spinlock *lk)
 
   // Go to sleep.
   p->chan = chan;
-  p->tickets = settickets(p->tickets, 0);
   p->state = SLEEPING;
+  settickets(p->tickets, 0);
 
   sched();
 

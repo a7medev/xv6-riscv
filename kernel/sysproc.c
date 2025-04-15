@@ -31,6 +31,14 @@ sys_settickets(void)
 }
 
 uint64
+sys_getpinfo(void)
+{
+  uint64 addr;
+  argaddr(0, &addr);
+  return getpinfo(addr);
+}
+
+uint64
 sys_getpid(void)
 {
   return myproc()->pid;

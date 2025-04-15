@@ -136,9 +136,11 @@ UPROGS=\
 	$U/_sh\
 	$U/_stressfs\
 	$U/_usertests\
+	$U/_ps\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_lotterytest\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
