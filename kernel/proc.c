@@ -15,6 +15,10 @@ struct proc *initproc;
 int nextpid = 1;
 struct spinlock pid_lock;
 
+// Total number of available tickets for lottery scheduling
+uint totaltickets = 0;
+struct spinlock tickets_lock;
+
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
@@ -51,6 +55,7 @@ procinit(void)
   
   initlock(&pid_lock, "nextpid");
   initlock(&wait_lock, "wait_lock");
+  initlock(&tickets_lock, "tickets_lock");
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       p->state = UNUSED;
@@ -100,6 +105,16 @@ allocpid()
   release(&pid_lock);
 
   return pid;
+}
+
+// Updates number of tickets from old to new and returns new
+uint
+settickets(uint old, uint new)
+{
+  acquire(&tickets_lock);
+  totaltickets += new - old;
+  release(&tickets_lock);
+  return new;
 }
 
 // Look in the process table for an UNUSED proc.
@@ -168,6 +183,7 @@ freeproc(struct proc *p)
   p->chan = 0;
   p->killed = 0;
   p->xstate = 0;
+  p->tickets = 0;
   p->state = UNUSED;
 }
 
@@ -249,6 +265,7 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+  p->tickets = settickets(0, 1);
   p->state = RUNNABLE;
 
   release(&p->lock);
@@ -319,6 +336,7 @@ fork(void)
   release(&wait_lock);
 
   acquire(&np->lock);
+  np->tickets = settickets(0, p->tickets);
   np->state = RUNNABLE;
   release(&np->lock);
 
@@ -375,6 +393,7 @@ exit(int status)
   
   acquire(&p->lock);
 
+  settickets(p->tickets, 0);
   p->xstate = status;
   p->state = ZOMBIE;
 
@@ -561,6 +580,7 @@ sleep(void *chan, struct spinlock *lk)
 
   // Go to sleep.
   p->chan = chan;
+  p->tickets = settickets(p->tickets, 0);
   p->state = SLEEPING;
 
   sched();
@@ -584,6 +604,7 @@ wakeup(void *chan)
     if(p != myproc()){
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
+        settickets(0, p->tickets);
         p->state = RUNNABLE;
       }
       release(&p->lock);
@@ -605,6 +626,7 @@ kill(int pid)
       p->killed = 1;
       if(p->state == SLEEPING){
         // Wake process from sleep().
+        settickets(0, p->tickets);
         p->state = RUNNABLE;
       }
       release(&p->lock);
