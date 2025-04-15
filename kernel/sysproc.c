@@ -16,6 +16,21 @@ sys_exit(void)
 }
 
 uint64
+sys_settickets(void)
+{
+  int tickets;
+  argint(0, &tickets);
+  if (tickets < 1)
+    return -1;
+
+  struct proc *p = myproc();
+  acquire(&p->lock);
+  p->tickets = settickets(p->tickets, tickets);
+  release(&p->lock);
+  return 0;
+}
+
+uint64
 sys_getpid(void)
 {
   return myproc()->pid;
