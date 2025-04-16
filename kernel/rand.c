@@ -1,15 +1,15 @@
 #include "rand.h"
 
-uint rand(uint *seed) {
+int rand(int *seed) {
     // Linear congruential psuedo-random number generator
-    const uint a = 1664525;
-    const uint c = 1013904223;
-    const uint m = 0xFFFFFFFF; // 2^31
+    const int a = 1664525;
+    const int c = 1013904223;
+    const int m = 0x7FFFFFFF; // 2^31
 
     *seed = (a * (*seed) + c) & m;
     return *seed;
 }
 
-uint randuntil(uint *seed, uint n) {
+int randuntil(int *seed, int n) {
     return rand(seed) % n;
 }
