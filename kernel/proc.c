@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "defs.h"
 #include "pstat.h"
+#include "rand.h"
 
 struct cpu cpus[NCPU];
 
@@ -17,6 +18,7 @@ int nextpid = 1;
 struct spinlock pid_lock;
 
 // Total number of available tickets for lottery scheduling
+uint randseed = 314159265;
 uint totaltickets = 0;
 struct spinlock tickets_lock;
 
@@ -125,7 +127,7 @@ getpinfo(uint64 addr) {
     struct proc *p = &proc[i];
 
     acquire(&p->lock);
-    if (p->state == UNUSED) {
+    if (p->state == UNUSED || p->state == ZOMBIE) {
       release(&p->lock);
       continue;
     }
@@ -294,7 +296,6 @@ userinit(void)
 
   p->tickets = settickets(0, 1);
   p->state = RUNNABLE;
-  printf("userinit, tickets: %d, pid: %d\n", p->tickets, p->pid);
 
   release(&p->lock);
 }
@@ -502,9 +503,22 @@ scheduler(void)
     intr_on();
 
     int found = 0;
+    
+    acquire(&tickets_lock);
+    uint target = randuntil(&randseed, totaltickets);
+    release(&tickets_lock);
+    uint tickets = 0;
+    
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
+        tickets += p->tickets;
+
+        if (tickets < target) {
+          release(&p->lock);
+          continue;
+        }
+
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
