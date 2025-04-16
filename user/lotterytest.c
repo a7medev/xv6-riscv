@@ -1,7 +1,7 @@
 #include "kernel/types.h"
 #include "user/user.h"
 
-#define N 10
+#define N 5
 
 void
 lotterytest(void)
@@ -16,14 +16,15 @@ lotterytest(void)
         }
 
         if (pid > 0) {
-            for (;;) {
-                // Do nothing, just busy looping to consume CPU.
-            }
             break;
         }
 
         settickets(tickets);
         tickets *= 2;
+    }
+
+    for (;;) {
+        // Do nothing, just busy looping to consume CPU.
     }
 }
 
