@@ -28,6 +28,7 @@ int             exec(char*, char**);
 // file.c
 struct file*    filealloc(void);
 void            fileclose(struct file*);
+int             filelock(struct file*, int op);
 struct file*    filedup(struct file*);
 void            fileinit(void);
 int             fileread(struct file*, uint64, int n);

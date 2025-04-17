@@ -108,6 +108,18 @@ sys_close(void)
 }
 
 uint64
+sys_flock(void)
+{
+  struct file *f;
+  int op;
+  
+  argint(1, &op);
+  if(argfd(0, 0, &f) < 0)
+    return -1;
+  return filelock(f, op);
+}
+
+uint64
 sys_fstat(void)
 {
   struct file *f;

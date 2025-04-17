@@ -10,6 +10,7 @@
 #include "spinlock.h"
 #include "sleeplock.h"
 #include "file.h"
+#include "flock.h"
 #include "stat.h"
 #include "proc.h"
 
@@ -79,6 +80,21 @@ fileclose(struct file *f)
     begin_op();
     iput(ff.ip);
     end_op();
+  }
+}
+
+int
+filelock(struct file *f, int op)
+{
+  switch (op) {
+  case LOCK_EX:
+    acquiresleep(&f->ip->filelock);
+    return 0;
+  case LOCK_UN:
+    releasesleep(&f->ip->filelock);
+    return 0;
+  default:
+    return -1;
   }
 }
 

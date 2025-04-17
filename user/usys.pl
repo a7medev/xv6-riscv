@@ -28,6 +28,7 @@ entry("open");
 entry("mknod");
 entry("unlink");
 entry("fstat");
+entry("flock");
 entry("link");
 entry("mkdir");
 entry("chdir");
