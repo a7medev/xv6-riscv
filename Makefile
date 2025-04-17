@@ -23,6 +23,7 @@ OBJS = \
   $K/fs.o \
   $K/log.o \
   $K/sleeplock.o \
+  $K/rwlock.o \
   $K/file.o \
   $K/pipe.o \
   $K/exec.o \

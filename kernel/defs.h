@@ -6,6 +6,7 @@ struct pipe;
 struct proc;
 struct spinlock;
 struct sleeplock;
+struct rwlock;
 struct stat;
 struct superblock;
 
@@ -126,6 +127,12 @@ void            acquiresleep(struct sleeplock*);
 void            releasesleep(struct sleeplock*);
 int             holdingsleep(struct sleeplock*);
 void            initsleeplock(struct sleeplock*, char*);
+
+// rwlock.c
+void            acquireread(struct rwlock*);
+void            acquirewrite(struct rwlock*);
+int             releaserw(struct rwlock*);
+void            initrwlock(struct rwlock*, char*);
 
 // string.c
 int             memcmp(const void*, const void*, uint);

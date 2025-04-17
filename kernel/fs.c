@@ -17,6 +17,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "sleeplock.h"
+#include "rwlock.h"
 #include "fs.h"
 #include "buf.h"
 #include "file.h"
@@ -186,7 +187,7 @@ iinit()
   initlock(&itable.lock, "itable");
   for(i = 0; i < NINODE; i++) {
     initsleeplock(&itable.inode[i].lock, "inode");
-    initsleeplock(&itable.inode[i].filelock, "filelock");
+    initrwlock(&itable.inode[i].filelock, "filelock");
   }
 }
 
