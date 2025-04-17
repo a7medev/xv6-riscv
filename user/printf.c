@@ -1,5 +1,6 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
+#include "kernel/flock.h"
 #include "user/user.h"
 
 #include <stdarg.h>
@@ -153,5 +154,7 @@ printf(const char *fmt, ...)
   va_list ap;
 
   va_start(ap, fmt);
+  flock(1, LOCK_EX);
   vprintf(1, fmt, ap);
+  flock(1, LOCK_UN);
 }
