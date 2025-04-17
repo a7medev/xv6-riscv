@@ -65,6 +65,11 @@ fileclose(struct file *f)
   acquire(&ftable.lock);
   if(f->ref < 1)
     panic("fileclose");
+
+  // release flock if held
+  if (holdingsleep(&f->ip->filelock))
+    releasesleep(&f->ip->filelock);
+
   if(--f->ref > 0){
     release(&ftable.lock);
     return;
@@ -86,6 +91,9 @@ fileclose(struct file *f)
 int
 filelock(struct file *f, int op)
 {
+  if (f->type != FD_INODE && f->type != FD_DEVICE)
+    return -1;
+
   switch (op) {
   case LOCK_EX:
     acquiresleep(&f->ip->filelock);
