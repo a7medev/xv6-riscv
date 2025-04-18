@@ -357,7 +357,7 @@ uvmclear(pagetable_t pagetable, uint64 va)
 int
 uvmperm(pagetable_t pagetable, uint64 va0, uint64 len, int perm)
 {
-  if (va0 % PGSIZE != 0 || len % PGSIZE != 0)
+  if (va0 % PGSIZE != 0 || len % PGSIZE != 0 || len <= 0)
     return -1;
 
   pte_t *pte;
