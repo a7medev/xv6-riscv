@@ -23,3 +23,4 @@
 #define SYS_settickets 22
 #define SYS_getpinfo   23
 #define SYS_flock      24
+#define SYS_mprotect   25

@@ -92,6 +92,7 @@ extern uint64 sys_chdir(void);
 extern uint64 sys_dup(void);
 extern uint64 sys_getpid(void);
 extern uint64 sys_sbrk(void);
+extern uint64 sys_mprotect(void);
 extern uint64 sys_sleep(void);
 extern uint64 sys_uptime(void);
 extern uint64 sys_open(void);
@@ -132,6 +133,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_settickets] sys_settickets,
 [SYS_getpinfo]   sys_getpinfo,
 [SYS_flock]      sys_flock,
+[SYS_mprotect]   sys_mprotect,
 };
 
 void

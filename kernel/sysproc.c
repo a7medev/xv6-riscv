@@ -72,6 +72,20 @@ sys_sbrk(void)
 }
 
 uint64
+sys_mprotect(void)
+{
+  uint64 addr;
+  uint64 len;
+  int prot;
+
+  argaddr(0, &addr);
+  argaddr(1, &len);
+  argint(2, &prot);
+
+  return mprotect(addr, len, prot);
+}
+
+uint64
 sys_sleep(void)
 {
   int n;

@@ -35,6 +35,7 @@ entry("chdir");
 entry("dup");
 entry("getpid");
 entry("sbrk");
+entry("mprotect");
 entry("sleep");
 entry("uptime");
 entry("settickets");

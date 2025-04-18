@@ -7,6 +7,7 @@
 #include "defs.h"
 #include "pstat.h"
 #include "rand.h"
+#include "mprotect.h"
 
 struct cpu cpus[NCPU];
 
@@ -325,6 +326,28 @@ growproc(int n)
   }
   p->sz = sz;
   return 0;
+}
+
+static int
+prot2perm(int prot)
+{
+  int perm = 0;
+  if (prot & PROT_READ)
+    perm |= PTE_R;
+  if (prot & PROT_WRITE)
+    perm |= PTE_W | PTE_R; // write implies read in RISC-V
+  if (prot & PROT_EXEC)
+    perm |= PTE_X;
+  return perm;
+}
+
+int
+mprotect(uint64 addr, uint64 len, int prot)
+{
+  int perm = prot2perm(prot);
+  struct proc *p = myproc();
+
+  return uvmperm(p->pagetable, addr, len, perm);
 }
 
 // Create a new process, copying the parent.

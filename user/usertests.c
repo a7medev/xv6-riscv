@@ -1,3 +1,4 @@
+#include "kernel/mprotect.h"
 #include "kernel/param.h"
 #include "kernel/types.h"
 #include "kernel/stat.h"
@@ -2609,6 +2610,72 @@ nullderef(char *s)
   exit(0);
 }
 
+void mprotecttest(char *s)
+{
+  // mprotect an inaccessible page
+  if (mprotect((void *)0, PGSIZE, PROT_READ) == 0) {
+    printf("mprotect an inaccessible page succeeded, should have failed\n");
+    exit(1);
+  }
+
+  char *p = sbrk(2 * PGSIZE);
+  if (p < 0) {
+    printf("%s: sbrk failed\n", s);
+    exit(1);
+  }
+
+  // mprotect a page that is not aligned
+  if (mprotect(p + 1, PGSIZE, PROT_READ) == 0) {
+    printf("mprotect a page that is not aligned succeeded, should have failed\n");
+    exit(1);
+  }
+
+  // mprotect with a length that is not a multiple of PGSIZE
+  if (mprotect(p, PGSIZE + 1, PROT_READ) == 0) {
+    printf("mprotect with a length that is not a multiple of PGSIZE succeeded, should have failed\n");
+    exit(1);
+  }
+
+  // write to read-only page
+  int pid = fork();
+  if (pid < 0) {
+    printf("fork failed\n");
+    exit(1);
+  }
+
+  if (pid == 0) {
+    mprotect(p, PGSIZE, PROT_READ);
+    p[0] = 'x';
+    exit(314); // should not be able to write
+  }
+
+  int st;
+  wait(&st);
+  if (st == 314) {
+    printf("mprotect read-only page write succeeded, should have failed\n");
+    exit(1);
+  }
+
+  // PROT_WRITE implies PROT_READ
+  mprotect(p, PGSIZE, PROT_WRITE);
+  p[0] = p[0] + 1; // performing a read and write
+
+  // mprotect with PROT_EXEC
+  unsigned char code[] = {
+    0x13, 0x05, 0xa0, 0x13,  // li a0, 314
+    0x82, 0x80               // ret
+  };
+  memcpy(p, code, sizeof(code));
+  mprotect(p, PGSIZE, PROT_EXEC);
+  int (*func)(void) = (int (*)(void))p;
+  int result = func();
+  if (result != 314) {
+    printf("mprotect PROT_EXEC failed, expected 314 but got %d\n", result);
+    exit(1);
+  }
+  exit(0);
+}
+
 struct test {
   void (*f)(char *);
   char *s;
@@ -2674,7 +2741,7 @@ struct test {
   {sbrk8000, "sbrk8000"},
   {badarg, "badarg" },
   {nullderef, "nullderef"},
-
+  {mprotecttest, "mprotecttest"},
   { 0, 0},
 };
 

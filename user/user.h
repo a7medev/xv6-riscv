@@ -22,6 +22,7 @@ int chdir(const char*);
 int dup(int);
 int getpid(void);
 char* sbrk(int);
+int mprotect(void *addr, uint64 len, int prot);
 int sleep(int);
 int uptime(void);
 int settickets(int tickets);

@@ -352,6 +352,26 @@ uvmclear(pagetable_t pagetable, uint64 va)
   *pte &= ~PTE_U;
 }
 
+// Sets PTE permissions to perm
+// the PTE must be valid and user-accessible and va0 and len must be aligned to PGSIZE
+int
+uvmperm(pagetable_t pagetable, uint64 va0, uint64 len, int perm)
+{
+  if (va0 % PGSIZE != 0 || len % PGSIZE != 0)
+    return -1;
+
+  pte_t *pte;
+  for (uint64 va = va0; va < va0 + len; va += PGSIZE)
+  {
+    pte = walk(pagetable, va, 0);
+    if (pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0)
+      return -1;
+    *pte &= ~PXMASK;
+    *pte |= perm | PTE_V | PTE_U;
+  }
+  return 0;
+}
+
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
