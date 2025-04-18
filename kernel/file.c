@@ -69,7 +69,7 @@ fileclose(struct file *f)
     panic("fileclose");
 
   // release flock if held
-  if (holdingflock(&f->ip->filelock))
+  if ((f->type == FD_INODE || f->type == FD_DEVICE) && holdingflock(&f->ip->filelock))
     funlock(&f->ip->filelock);
 
   if(--f->ref > 0){
