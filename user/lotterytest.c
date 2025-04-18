@@ -1,12 +1,12 @@
 #include "kernel/types.h"
 #include "user/user.h"
 
-#define N 5
+#define N 6
 
 void
 lotterytest(void)
 {
-    int tickets = 2;
+    int tickets = 1;
     int i;
     for (i = 0; i < N; ++i) {
         int pid = fork();

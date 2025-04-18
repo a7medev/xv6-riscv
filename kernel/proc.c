@@ -19,8 +19,8 @@ int nextpid = 1;
 struct spinlock pid_lock;
 
 // Total number of available tickets for lottery scheduling
-uint randseed = 314159265;
-uint totaltickets = 0;
+int randseed = 314159265;
+int totaltickets = 0;
 struct spinlock tickets_lock;
 
 extern void forkret(void);
@@ -119,8 +119,8 @@ allocpid()
 }
 
 // Updates number of tickets from old to new and returns new
-uint
-settickets(uint old, uint new)
+int
+settickets(int old, int new)
 {
   acquire(&tickets_lock);
   totaltickets += new - old;
@@ -452,7 +452,9 @@ exit(int status)
   
   acquire(&p->lock);
 
-  settickets(p->tickets, 0);
+  if (p->state != RUNNING)
+    panic("exit: not running");
+
   p->xstate = status;
   p->state = ZOMBIE;
 
@@ -535,9 +537,9 @@ scheduler(void)
     int found = 0;
     
     acquire(&tickets_lock);
-    uint target = randuntil(&randseed, totaltickets);
+    int target = randuntil(&randseed, totaltickets);
     release(&tickets_lock);
-    uint tickets = 0;
+    int tickets = 0;
     
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
@@ -552,6 +554,7 @@ scheduler(void)
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
+        settickets(p->tickets, 0);
         p->state = RUNNING;
         p->ticks++;
         c->proc = p;
@@ -605,6 +608,7 @@ yield(void)
 {
   struct proc *p = myproc();
   acquire(&p->lock);
+  settickets(0, p->tickets);
   p->state = RUNNABLE;
   sched();
   release(&p->lock);
@@ -651,10 +655,12 @@ sleep(void *chan, struct spinlock *lk)
   acquire(&p->lock);  //DOC: sleeplock1
   release(lk);
 
+  if (p->state != RUNNING)
+    panic("sleep: not running");
+
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-  settickets(p->tickets, 0);
 
   sched();
 
