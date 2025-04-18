@@ -2586,6 +2586,29 @@ badarg(char *s)
   exit(0);
 }
 
+void
+nullderef(char *s)
+{
+  int pid = fork();
+  if(pid < 0){
+    printf("fork failed\n");
+    exit(1);
+  }
+  if(pid == 0){
+    // dereference a null pointer
+    char *p = (char *)0;
+    *p = 1;
+    exit(314);
+  }
+  int st;
+  wait(&st);
+  if (st == 314) {
+    printf("%s: dereference null pointer did not cause a fault!\n", s);
+    exit(1);
+  }
+  exit(0);
+}
+
 struct test {
   void (*f)(char *);
   char *s;
@@ -2650,6 +2673,7 @@ struct test {
   {sbrklast, "sbrklast"},
   {sbrk8000, "sbrk8000"},
   {badarg, "badarg" },
+  {nullderef, "nullderef"},
 
   { 0, 0},
 };
