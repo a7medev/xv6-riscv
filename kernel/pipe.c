@@ -6,7 +6,8 @@
 #include "proc.h"
 #include "fs.h"
 #include "sleeplock.h"
-#include "rwlock.h"
+#include "bitarray.h"
+#include "filelock.h"
 #include "file.h"
 
 #define PIPESIZE 512

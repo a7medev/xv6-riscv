@@ -6,7 +6,7 @@ struct pipe;
 struct proc;
 struct spinlock;
 struct sleeplock;
-struct rwlock;
+struct flock;
 struct stat;
 struct superblock;
 
@@ -97,6 +97,7 @@ void            setkilled(struct proc*);
 struct cpu*     mycpu(void);
 struct cpu*     getmycpu(void);
 struct proc*    myproc();
+int             myprocidx(void);
 void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);
@@ -128,11 +129,12 @@ void            releasesleep(struct sleeplock*);
 int             holdingsleep(struct sleeplock*);
 void            initsleeplock(struct sleeplock*, char*);
 
-// rwlock.c
-void            acquireread(struct rwlock*);
-void            acquirewrite(struct rwlock*);
-int             releaserw(struct rwlock*);
-void            initrwlock(struct rwlock*, char*);
+// filelock.c
+int             flocksh(struct flock*);
+int             flockex(struct flock*);
+int             funlock(struct flock*);
+int             holdingflock(struct flock*);
+void            initflock(struct flock*, char*);
 
 // string.c
 int             memcmp(const void*, const void*, uint);

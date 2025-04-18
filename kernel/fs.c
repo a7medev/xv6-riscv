@@ -17,7 +17,8 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "sleeplock.h"
-#include "rwlock.h"
+#include "bitarray.h"
+#include "filelock.h"
 #include "fs.h"
 #include "buf.h"
 #include "file.h"
@@ -187,7 +188,7 @@ iinit()
   initlock(&itable.lock, "itable");
   for(i = 0; i < NINODE; i++) {
     initsleeplock(&itable.inode[i].lock, "inode");
-    initrwlock(&itable.inode[i].filelock, "filelock");
+    initflock(&itable.inode[i].filelock, "filelock");
   }
 }
 
@@ -212,7 +213,12 @@ ialloc(uint dev, short type)
       dip->type = type;
       log_write(bp);   // mark it allocated on the disk
       brelse(bp);
-      return iget(dev, inum);
+      struct inode *ip = iget(dev, inum);
+      if (ip->filelock.holders[0] != 0) {
+        printf("DAMN!!!");
+        panic("inode: filelock holders nonzero");
+      }
+      return ip;
     }
     brelse(bp);
   }

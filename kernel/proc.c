@@ -50,6 +50,13 @@ proc_mapstacks(pagetable_t kpgtbl)
   }
 }
 
+// returns current process index in the proc table.
+int
+myprocidx(void)
+{
+  return (int) (myproc() - proc);
+}
+
 // initialize the proc table.
 void
 procinit(void)

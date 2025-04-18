@@ -9,7 +9,8 @@
 #include "fs.h"
 #include "spinlock.h"
 #include "sleeplock.h"
-#include "rwlock.h"
+#include "bitarray.h"
+#include "filelock.h"
 #include "file.h"
 #include "flock.h"
 #include "stat.h"
@@ -68,9 +69,8 @@ fileclose(struct file *f)
     panic("fileclose");
 
   // release flock if held
-  // FIXME: add holdingrw
-  // if (holdingsleep(&f->ip->filelock))
-  //   releasesleep(&f->ip->filelock);
+  if (holdingflock(&f->ip->filelock))
+    funlock(&f->ip->filelock);
 
   if(--f->ref > 0){
     release(&ftable.lock);
@@ -90,21 +90,23 @@ fileclose(struct file *f)
   }
 }
 
+// FIXME: inode->holders must be reset to 0's with each allocation.
+
 int
 filelock(struct file *f, int op)
 {
   if (f->type != FD_INODE && f->type != FD_DEVICE)
     return -1;
 
+  struct flock *flk = &f->ip->filelock;
+
   switch (op) {
   case LOCK_EX:
-    acquirewrite(&f->ip->filelock);
-    return 0;
+    return flockex(flk);
   case LOCK_SH:
-    acquireread(&f->ip->filelock);
-    return 0;
+    return flocksh(flk);
   case LOCK_UN:
-    return releaserw(&f->ip->filelock);
+    return funlock(flk);
   default:
     return -1;
   }

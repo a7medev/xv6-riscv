@@ -18,7 +18,7 @@ struct inode {
   uint dev;           // Device number
   uint inum;          // Inode number
   int ref;            // Reference count
-  struct rwlock filelock; // advisory file lock used in flock syscall
+  struct flock filelock; // Advisory file lock used in flock syscall
   struct sleeplock lock; // protects everything below here
   int valid;          // inode has been read from disk?
 

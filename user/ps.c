@@ -1,4 +1,5 @@
 #include "kernel/types.h"
+#include "kernel/param.h"
 #include "kernel/pstat.h"
 #include "user/user.h"
 

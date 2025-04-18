@@ -1,4 +1,4 @@
-#include "rand.h"
+#include "types.h"
 
 uint rand(uint *seed) {
     // Linear congruential psuedo-random number generator
