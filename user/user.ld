@@ -2,7 +2,7 @@ OUTPUT_ARCH( "riscv" )
 
 SECTIONS
 {
- . = 0x0;
+ . = 0x1000; /* start at 0x1000 since the first page is inaccessible to allow traps for null dereferences */
  
   .text : {
     *(.text .text.*)
