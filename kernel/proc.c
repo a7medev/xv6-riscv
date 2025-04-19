@@ -352,10 +352,11 @@ mprotect(uint64 addr, uint64 len, int prot)
 
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
+// If cow!=0, copy-on-write is used for the child process.
 int
-fork(void)
+fork(int cow)
 {
-  int i, pid;
+  int i, pid, r;
   struct proc *np;
   struct proc *p = myproc();
 
@@ -365,7 +366,12 @@ fork(void)
   }
 
   // Copy user memory from parent to child.
-  if(uvmcow(p->pagetable, np->pagetable, p->sz) < 0){
+  if (cow)
+    r = uvmcow(p->pagetable, np->pagetable, p->sz);
+  else
+    r = uvmcopy(p->pagetable, np->pagetable, p->sz);
+
+  if(r < 0){
     freeproc(np);
     release(&np->lock);
     return -1;

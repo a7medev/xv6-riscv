@@ -3,6 +3,7 @@ struct pstat;
 
 // system calls
 int fork(void);
+int vfork(void);
 int exit(int) __attribute__((noreturn));
 int wait(int*);
 int pipe(int*);
@@ -24,7 +25,7 @@ int getpid(void);
 char* sbrk(int);
 int mprotect(void *addr, uint64 len, int prot);
 int sleep(int);
-int uptime(void);
+uint64 uptime(void);
 int settickets(int tickets);
 int getpinfo(struct pstat *st);
 

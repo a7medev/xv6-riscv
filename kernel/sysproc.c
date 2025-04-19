@@ -47,7 +47,13 @@ sys_getpid(void)
 uint64
 sys_fork(void)
 {
-  return fork();
+  return fork(/*cow=*/0);
+}
+
+uint64
+sys_vfork(void)
+{
+  return fork(/*cow=*/1);
 }
 
 uint64

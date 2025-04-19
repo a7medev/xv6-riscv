@@ -24,3 +24,4 @@
 #define SYS_getpinfo   23
 #define SYS_flock      24
 #define SYS_mprotect   25
+#define SYS_vfork      26
