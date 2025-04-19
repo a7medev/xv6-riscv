@@ -339,6 +339,99 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   return -1;
 }
 
+// Given a parent process's page table, copy
+// its page table into the child's page table
+// and mark PTEs as copy-on-write.
+// Doesn't copy physical memory.
+// returns 0 on success, -1 on failure.
+// frees any allocated pages on failure.
+int
+uvmcow(pagetable_t old, pagetable_t new, uint64 sz)
+{
+  pte_t *pte;
+  uint64 pa, i;
+  uint flags;
+
+  for(i = 0; i < sz; i += PGSIZE){
+    if((pte = walk(old, i, 0)) == 0)
+      panic("uvmcow: pte should exist");
+    if((*pte & PTE_V) == 0)
+      panic("uvmcow: page not present");
+    pa = PTE2PA(*pte);
+    flags = PTE_FLAGS(*pte) | PTE_COW;
+    if (*pte & PTE_W) {
+      flags &= ~PTE_W;
+      flags |= PTE_PW;
+    }
+    *pte &= ~PXMASK;
+    *pte |= flags;
+    kretain((char *)pa);
+    if(mappages(new, i, PGSIZE, pa, flags) != 0)
+      goto err;
+  }
+  return 0;
+
+ err:
+  uvmunmap(new, 0, i / PGSIZE, 1);
+  return -1;
+}
+
+int
+uvmcowcopy(pte_t *pte)
+{
+  uint64 pa;
+  void *mem;
+
+  pa = PTE2PA(*pte);
+
+  if ((mem = kalloc()) == 0)
+    return -1;
+
+  memmove(mem, (char*)pa, PGSIZE);
+  kfree((void *)pa);
+  uint64 flags = PTE_FLAGS(*pte);
+  flags &= ~PTE_COW;
+  if (flags & PTE_PW) {
+    flags &= ~PTE_PW;
+    flags |= PTE_W;
+  }
+  *pte = PA2PTE(mem) | flags;
+  return 0;
+}
+
+// must be called before writing to a user page.
+// if the page is copy-on-write, it makes a copy for the write.
+// returns 0 if the page is writable, -1 if not.
+// stores the PTE in *out_pte if out_pte!=0.
+//
+// used in usertrap to handle page faults due to copy-on-write.
+int
+uvmprewrite(pagetable_t pagetable, uint64 va, pte_t **out_pte)
+{
+  uint64 va0 = PGROUNDDOWN(va);
+
+  if (va0 >= MAXVA)
+    return -1;
+
+  pte_t *pte = walk(pagetable, va0, 0);
+  if (out_pte != 0)
+    *out_pte = pte;
+
+  // invalid PTE or not user-accessible
+  if (pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0)
+    return -1;
+
+  // if copy-on-write, make a copy
+  if ((*pte & PTE_COW) && uvmcowcopy(pte) < 0)
+    return -1;
+
+  // if not writable, return error
+  if ((*pte & PTE_W) == 0)
+    return -1;
+
+  return 0;
+}
+
 // mark a PTE invalid for user access.
 // used by exec for the user stack guard page.
 void
@@ -383,12 +476,10 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
-    if(va0 >= MAXVA)
+    
+    if (uvmprewrite(pagetable, va0, &pte) < 0)
       return -1;
-    pte = walk(pagetable, va0, 0);
-    if(pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0 ||
-       (*pte & PTE_W) == 0)
-      return -1;
+
     pa0 = PTE2PA(*pte);
     n = PGSIZE - (dstva - va0);
     if(n > len)

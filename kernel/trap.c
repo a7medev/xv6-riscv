@@ -29,6 +29,19 @@ trapinithart(void)
   w_stvec((uint64)kernelvec);
 }
 
+// handle a page fault interrupt due to copy-on-write.
+int
+cowfault(struct proc *p)
+{
+  if (r_scause() != 0xF)
+    return -1;
+  
+  uint64 va = r_stval();
+
+  // try performing copy-on-write on the faulting address
+  return uvmprewrite(p->pagetable, va, 0);
+}
+
 //
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
@@ -66,6 +79,8 @@ usertrap(void)
 
     syscall();
   } else if((which_dev = devintr()) != 0){
+    // ok
+  } else if (cowfault(p) == 0) {
     // ok
   } else {
     printf("usertrap(): unexpected scause 0x%lx pid=%d\n", r_scause(), p->pid);
