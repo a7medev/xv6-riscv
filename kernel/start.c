@@ -58,8 +58,8 @@ timerinit()
   // enable the sstc extension (i.e. stimecmp).
   w_menvcfg(r_menvcfg() | (1L << 63)); 
   
-  // allow supervisor to use stimecmp and time.
-  w_mcounteren(r_mcounteren() | 2);
+  // allow supervisor to use stimecmp, time, and cycle.
+  w_mcounteren(r_mcounteren() | 0b11);
   
   // ask for the very first timer interrupt.
   w_stimecmp(r_time() + 1000000);

@@ -39,5 +39,6 @@ entry("sbrk");
 entry("mprotect");
 entry("sleep");
 entry("uptime");
+entry("clock");
 entry("settickets");
 entry("getpinfo");

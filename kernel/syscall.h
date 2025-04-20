@@ -25,3 +25,4 @@
 #define SYS_flock      24
 #define SYS_mprotect   25
 #define SYS_vfork      26
+#define SYS_clock      27

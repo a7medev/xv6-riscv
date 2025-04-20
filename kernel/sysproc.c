@@ -134,3 +134,9 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_clock(void)
+{
+  return r_cycle();
+}
