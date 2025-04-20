@@ -2637,7 +2637,7 @@ void mprotecttest(char *s)
   }
 
   // write to read-only page
-  int pid = fork();
+  int pid = vfork();
   if (pid < 0) {
     printf("fork failed\n");
     exit(1);
@@ -2671,6 +2671,50 @@ void mprotecttest(char *s)
   int result = func();
   if (result != 314) {
     printf("mprotect PROT_EXEC failed, expected 314 but got %d\n", result);
+    exit(1);
+  }
+  exit(0);
+}
+
+void
+mprotectcow(char *s)
+{
+  char *p = sbrk(PGSIZE);
+  if (p < 0) {
+    printf("%s: sbrk failed\n", s);
+    exit(1);
+  }
+
+  // copy-on-write
+  if (mprotect(p, PGSIZE, PROT_READ) < 0) {
+    printf("mprotect failed\n");
+    exit(1);
+  }
+
+  // p is read-only
+  int pid = vfork();
+  if (pid < 0) {
+    printf("fork failed\n");
+    exit(1);
+  }
+  if (pid == 0) {
+    // mprotect makes it read-write without regard to COW
+    if (mprotect(p, PGSIZE, PROT_WRITE|PROT_READ)) {
+      printf("mprotect failed\n");
+      exit(1);
+    }
+    strcpy(p, "foolish");
+    exit(0);
+  }
+  int st;
+  wait(&st);
+  if (st != 0) {
+    printf("child process failed\n");
+    exit(1);
+  }
+  // check if the parent can read the string
+  if (strcmp(p, "foolish") == 0) {
+    printf("read a string from a COW read-only page\n");
     exit(1);
   }
   exit(0);
@@ -2742,6 +2786,7 @@ struct test {
   {badarg, "badarg" },
   {nullderef, "nullderef"},
   {mprotecttest, "mprotecttest"},
+  {mprotecttest, "mprotectcow"},
   { 0, 0},
 };
 

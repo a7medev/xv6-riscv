@@ -363,7 +363,7 @@ uvmcow(pagetable_t old, pagetable_t new, uint64 sz)
       flags &= ~PTE_W;
       flags |= PTE_PW;
     }
-    *pte &= ~PXMASK;
+    *pte &= ~PFLGMASK;
     *pte |= flags;
     kretain((char *)pa);
     if(mappages(new, i, PGSIZE, pa, flags) != 0)
@@ -459,7 +459,15 @@ uvmperm(pagetable_t pagetable, uint64 va0, uint64 len, int perm)
     pte = walk(pagetable, va, 0);
     if (pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0)
       return -1;
-    *pte &= ~PXMASK;
+    if (*pte & PTE_COW) {
+      if (perm & PTE_W)
+        perm |= PTE_PW;
+      else
+        perm &= ~PTE_PW;
+      perm &= ~PTE_W;
+      perm |= PTE_COW;
+    }
+    *pte &= ~PFLGMASK;
     *pte |= perm | PTE_V | PTE_U;
   }
   return 0;

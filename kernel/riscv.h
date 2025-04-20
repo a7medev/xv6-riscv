@@ -365,12 +365,14 @@ typedef uint64 *pagetable_t; // 512 PTEs
 #define PTE_COW (1L << 8) // copy-on-write
 #define PTE_PW  (1L << 9) // previous write access, before copy-on-write
 
+#define PFLGMASK 0x3FF
+
 // shift a physical address to the right place for a PTE.
 #define PA2PTE(pa) ((((uint64)pa) >> 12) << 10)
 
 #define PTE2PA(pte) (((pte) >> 10) << 12)
 
-#define PTE_FLAGS(pte) ((pte) & 0x3FF)
+#define PTE_FLAGS(pte) ((pte) & PFLGMASK)
 
 // extract the three 9-bit page table indices from a virtual address.
 #define PXMASK          0x1FF // 9 bits
